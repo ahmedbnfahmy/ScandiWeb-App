@@ -4,6 +4,8 @@ namespace App\GraphQL\Type;
 
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
+use App\GraphQL\Type\AttributeSetType;
+
 
 class ProductType
 {

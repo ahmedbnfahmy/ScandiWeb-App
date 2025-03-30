@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\GraphQL\Resolver\ProductResolver;
+use App\GraphQL\Type\ProductType;
 use GraphQL\GraphQL as GraphQLBase;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
@@ -20,13 +21,13 @@ class GraphQL {
                 'name' => 'Query',
                 'fields' => [
                     'products' => [
-                        'type' => Type::listOf(self::getProductType()),
+                        'type' => Type::listOf(ProductType::get()),
                         'resolve' => fn() => $productResolver->getProducts()
                     ],
                     'product' => [
-                        'type' => self::getProductType(),
+                        'type' => ProductType::get(),
                         'args' => [
-                            'id' => Type::nonNull(Type::int())
+                            'id' => Type::nonNull(Type::string())
                         ],
                         'resolve' => fn($root, array $args) => $productResolver->getProduct($args['id'])
                     ]
@@ -59,22 +60,5 @@ class GraphQL {
 
         header('Content-Type: application/json; charset=UTF-8');
         return json_encode($output);
-    }
-
-    private static function getProductType(): ObjectType
-    {
-        return new ObjectType([
-            'name' => 'Product',
-            'fields' => [
-                'id' => Type::string(),
-                'name' => Type::string(),
-                'description' => Type::string(),
-                'price' => Type::float(),
-                'category' => Type::string(),
-                'brand' => Type::string(),
-                'in_stock' => Type::boolean(),
-                'gallery' => Type::listOf(Type::string())
-            ]
-        ]);
     }
 }

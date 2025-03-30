@@ -124,4 +124,20 @@ abstract class CoreModel extends Connection
             throw new PDOException("FindBy failed: " . $e->getMessage());
         }
     }
+
+    /**
+     * Get attributes for a specific product
+     */
+    public function getAttributes(string $productId): array
+    {
+        return $this->query(
+            "SELECT pa.attribute_id, a.name, a.type, 
+                    pa.value_id, v.display_value, v.value
+             FROM attributes pa
+             JOIN attributes a ON pa.attribute_id = a.id
+             JOIN attribute_items v ON pa.value_id = v.id
+             WHERE pa.product_id = ?",
+            [$productId]
+        );
+    }
 }

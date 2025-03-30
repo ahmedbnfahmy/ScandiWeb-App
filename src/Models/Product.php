@@ -51,4 +51,50 @@ class Product extends CoreModel
             [$minPrice, $maxPrice]
         );
     }
+    public function getAllProductsWithAttributes(): array
+    {
+        // First, get all products
+        $products = $this->all();
+        
+        foreach ($products as &$product) {
+            $attributeRows = $this->getAttributes($product['id']);
+            
+            // Group attributes by attribute ID
+            $attributeSets = [];
+            foreach ($attributeRows as $row) {
+                $attrId = $row['attribute_id'];
+                
+                // Create new attribute set if it doesn't exist yet
+                if (!isset($attributeSets[$attrId])) {
+                    $attributeSets[$attrId] = [
+                        'id' => $attrId,
+                        'name' => $row['name'],
+                        'type' => $row['type'],
+                        'items' => []
+                    ];
+                }
+                
+                // Add this value to the attribute's items
+                $attributeSets[$attrId]['items'][] = [
+                    'displayValue' => $row['display_value'],
+                    'value' => $row['value'],
+                    'id' => $row['value_id']
+                ];
+            }
+            
+            $product['attributes'] = array_values($attributeSets);
+            
+            if (isset($product['in_stock'])) {
+                $product['inStock'] = (bool)$product['in_stock'];
+            }
+            
+            // Parse gallery JSON if it exists
+            if (isset($product['gallery']) && is_string($product['gallery'])) {
+                $product['gallery'] = json_decode($product['gallery'], true) ?? [];
+            }
+        }
+        
+        return $products;
+    }
+
 }
