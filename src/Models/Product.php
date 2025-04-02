@@ -30,9 +30,7 @@ class Product extends CoreModel
         );
     }
 
-    /**
-     * Search products by term
-     */
+    
     public function search(string $term): array
     {
         return $this->query(
@@ -41,9 +39,7 @@ class Product extends CoreModel
         );
     }
 
-    /**
-     * Get products by price range
-     */
+    
     public function getByPriceRange(float $minPrice, float $maxPrice): array
     {
         return $this->query(
@@ -51,50 +47,48 @@ class Product extends CoreModel
             [$minPrice, $maxPrice]
         );
     }
-    public function getAllProductsWithAttributes(): array
+    public function getAttributes(string $productId): array
     {
-        // First, get all products
-        $products = $this->all();
+        $attributeRows = $this->query(
+            "SELECT a.id as attribute_id, a.name, a.type 
+             FROM attributes a
+             WHERE a.product_id = ?",
+            [$productId]
+        );
         
-        foreach ($products as &$product) {
-            $attributeRows = $this->getAttributes($product['id']);
+        $result = [];
+        foreach ($attributeRows as $attr) {
+            $attrId = $attr['attribute_id'];
             
-            // Group attributes by attribute ID
-            $attributeSets = [];
-            foreach ($attributeRows as $row) {
-                $attrId = $row['attribute_id'];
-                
-                // Create new attribute set if it doesn't exist yet
-                if (!isset($attributeSets[$attrId])) {
-                    $attributeSets[$attrId] = [
-                        'id' => $attrId,
-                        'name' => $row['name'],
-                        'type' => $row['type'],
-                        'items' => []
-                    ];
-                }
-                
-                // Add this value to the attribute's items
-                $attributeSets[$attrId]['items'][] = [
-                    'displayValue' => $row['display_value'],
-                    'value' => $row['value'],
-                    'id' => $row['value_id']
+            // Get values for this attribute
+            $values = $this->query(
+                "SELECT id as value_id, display_value, value
+                 FROM attribute_items
+                 WHERE attribute_id = ?",
+                [$attrId]
+            );
+            
+            // Structure the attribute with its values
+            $attribute = [
+                'id' => $attrId,
+                'name' => $attr['name'],
+                'type' => $attr['type'],
+                'items' => []
+            ];
+            
+            // Add items to the attribute
+            foreach ($values as $value) {
+                $attribute['items'][] = [
+                    'id' => $value['value_id'],
+                    'displayValue' => $value['display_value'],
+                    'value' => $value['value']
                 ];
             }
             
-            $product['attributes'] = array_values($attributeSets);
-            
-            if (isset($product['in_stock'])) {
-                $product['inStock'] = (bool)$product['in_stock'];
-            }
-            
-            // Parse gallery JSON if it exists
-            if (isset($product['gallery']) && is_string($product['gallery'])) {
-                $product['gallery'] = json_decode($product['gallery'], true) ?? [];
-            }
+            $result[] = $attribute;
         }
         
-        return $products;
+        return $result;
     }
 
 }

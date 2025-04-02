@@ -17,13 +17,24 @@ class ProductResolver
      * Get all products
      */
     public function getProducts(): array
-    {
-        try {
-            return $this->model->all();
-        } catch (\Exception $e) {
-            throw new \Exception("Failed to fetch products: " . $e->getMessage());
+{
+    try {
+        $products = $this->model->all();
+        // Add attributes to each product
+        foreach ($products as &$product) {
+            $product['attributes'] = $this->model->getAttributes($product['id']);
+            
+            // Handle field name conversion
+            if (isset($product['in_stock'])) {
+                $product['inStock'] = (bool)$product['in_stock'];
+            }
         }
+        
+        return $products;
+    } catch (\Exception $e) {
+        throw new \Exception("Failed to fetch products: " . $e->getMessage());
     }
+}
 
     /**
      * Get single product

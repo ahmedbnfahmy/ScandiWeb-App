@@ -125,19 +125,75 @@ abstract class CoreModel extends Connection
         }
     }
 
-    /**
-     * Get attributes for a specific product
-     */
-    public function getAttributes(string $productId): array
-    {
-        return $this->query(
-            "SELECT pa.attribute_id, a.name, a.type, 
-                    pa.value_id, v.display_value, v.value
-             FROM attributes pa
-             JOIN attributes a ON pa.attribute_id = a.id
-             JOIN attribute_items v ON pa.value_id = v.id
-             WHERE pa.product_id = ?",
-            [$productId]
-        );
+    
+public function getAllProductsWithAttributes(): array
+{
+    // First, get all products
+    $products = $this->all();
+    $productIds = array_column($products, 'id');
+    
+    if (empty($productIds)) {
+        return [];
     }
+    
+    // Create placeholders for the IN clause
+    $placeholders = implode(',', array_fill(0, count($productIds), '?'));
+    
+    // Fetch attributes for all products in a single query
+    $allAttributes = $this->query(
+        "SELECT pa.product_id, pa.attribute_id, a.name, a.type, 
+                pa.value_id, v.display_value, v.value
+         FROM product_attributes pa
+         JOIN attributes a ON pa.attribute_id = a.id
+         JOIN attribute_items v ON pa.value_id = v.id
+         WHERE pa.product_id IN ($placeholders)",
+        $productIds
+    );
+    
+    // Group attributes by product
+    $attributesByProduct = [];
+    foreach ($allAttributes as $attr) {
+        $productId = $attr['product_id'];
+        $attrId = $attr['attribute_id'];
+        
+        if (!isset($attributesByProduct[$productId])) {
+            $attributesByProduct[$productId] = [];
+        }
+        
+        if (!isset($attributesByProduct[$productId][$attrId])) {
+            $attributesByProduct[$productId][$attrId] = [
+                'id' => $attrId,
+                'name' => $attr['name'],
+                'type' => $attr['type'],
+                'items' => []
+            ];
+        }
+        
+        $attributesByProduct[$productId][$attrId]['items'][] = [
+            'displayValue' => $attr['display_value'],
+            'value' => $attr['value'],
+            'id' => $attr['value_id']
+        ];
+    }
+    
+    // Add attributes to each product
+    foreach ($products as &$product) {
+        $id = $product['id'];
+        $product['attributes'] = isset($attributesByProduct[$id]) 
+            ? array_values($attributesByProduct[$id]) 
+            : [];
+            
+        // Convert in_stock to inStock for GraphQL schema
+        if (isset($product['in_stock'])) {
+            $product['inStock'] = (bool)$product['in_stock'];
+        }
+        
+        // Parse gallery JSON if it exists
+        if (isset($product['gallery']) && is_string($product['gallery'])) {
+            $product['gallery'] = json_decode($product['gallery'], true) ?? [];
+        }
+    }
+    
+    return $products;
+}
 }
