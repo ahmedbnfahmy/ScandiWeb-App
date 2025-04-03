@@ -2,47 +2,81 @@
 
 namespace App\GraphQL\Resolver;
 
+use App\Factories\ProductFactory;
+use App\Models\Abstract\AbstractProduct;
 use App\Models\Product;
+use App\Models\Repository\ProductRepository;
 
 class ProductResolver
 {
-    private Product $model;
+    private ProductRepository $repository;
 
     public function __construct()
     {
-        $this->model = new Product();
+        $this->repository = new ProductRepository();
     }
 
     /**
      * Get all products
      */
     public function getProducts(): array
-{
-    try {
-        $products = $this->model->all();
-        // Add attributes to each product
-        foreach ($products as &$product) {
-            $product['attributes'] = $this->model->getAttributes($product['id']);
+    {
+        try {
+            // Get raw product data from repository
+            $productsData = $this->repository->findAll();
+            $enrichedProducts = [];
             
-            // Handle field name conversion
-            if (isset($product['in_stock'])) {
-                $product['inStock'] = (bool)$product['in_stock'];
+            // Create the appropriate product type instance for each product
+            foreach ($productsData as $productData) {
+                $product = ProductFactory::create($productData);
+                
+                // Enrich the product data with type-specific attributes
+                $enrichedProduct = $productData;
+                $enrichedProduct['attributes'] = $product->getAttributes();
+                $enrichedProduct['prices'] = $product->getPrices();
+                $enrichedProduct['gallery'] = $product->getGallery();
+                
+                // Handle field name conversion
+                if (isset($enrichedProduct['in_stock'])) {
+                    $enrichedProduct['inStock'] = (bool)$enrichedProduct['in_stock'];
+                }
+                
+                $enrichedProducts[] = $enrichedProduct;
             }
+            
+            return $enrichedProducts;
+        } catch (\Exception $e) {
+            throw new \Exception("Failed to fetch products: " . $e->getMessage());
         }
-        
-        return $products;
-    } catch (\Exception $e) {
-        throw new \Exception("Failed to fetch products: " . $e->getMessage());
     }
-}
 
     /**
      * Get single product
      */
-    public function getProduct(int $id): ?array
+    public function getProduct(string $id): ?array
     {
         try {
-            return $this->model->find($id);
+            // Get raw product data
+            $productData = $this->repository->findById($id);
+            
+            if (!$productData) {
+                return null;
+            }
+            
+            // Create the appropriate product type instance
+            $product = ProductFactory::create($productData);
+            
+            // Enrich with type-specific data
+            $productData['attributes'] = $product->getAttributes();
+            $productData['prices'] = $product->getPrices();
+            $productData['gallery'] = $product->getGallery();
+            
+            // Handle field name conversion
+            if (isset($productData['in_stock'])) {
+                $productData['inStock'] = (bool)$productData['in_stock'];
+            }
+            
+            return $productData;
         } catch (\Exception $e) {
             throw new \Exception("Failed to fetch product: " . $e->getMessage());
         }
@@ -54,7 +88,8 @@ class ProductResolver
     public function createProduct(array $data): array
     {
         try {
-            $productId = $this->model->create([
+            // Convert GraphQL input to database format
+            $productData = [
                 'name' => $data['name'],
                 'description' => $data['description'] ?? null,
                 'price' => $data['price'],
@@ -62,9 +97,20 @@ class ProductResolver
                 'brand' => $data['brand'],
                 'in_stock' => $data['inStock'] ?? true,
                 'gallery' => json_encode($data['gallery'] ?? [])
-            ]);
-
-            return $this->model->find($productId);
+            ];
+            
+            // Create product instance of appropriate type to validate
+            $product = ProductFactory::create($productData);
+            
+            if (!$product->validate()) {
+                throw new \Exception("Product validation failed");
+            }
+            
+            // Save the product
+            $productId = $this->repository->save($productData);
+            
+            // Return the created product
+            return $this->getProduct($productId);
         } catch (\Exception $e) {
             throw new \Exception("Failed to create product: " . $e->getMessage());
         }
@@ -73,9 +119,17 @@ class ProductResolver
     /**
      * Update product
      */
-    public function updateProduct(int $id, array $data): ?array
+    public function updateProduct(string $id, array $data): ?array
     {
         try {
+            // Get existing product data
+            $existingData = $this->repository->findById($id);
+            
+            if (!$existingData) {
+                return null;
+            }
+            
+            // Prepare update data
             $updateData = array_filter([
                 'name' => $data['name'] ?? null,
                 'description' => $data['description'] ?? null,
@@ -85,9 +139,21 @@ class ProductResolver
                 'in_stock' => $data['inStock'] ?? null,
                 'gallery' => isset($data['gallery']) ? json_encode($data['gallery']) : null
             ], fn($value) => $value !== null);
-
-            $success = $this->model->update($updateData, ['id' => $id]);
-            return $success ? $this->model->find($id) : null;
+            
+            // Merge with existing data for validation
+            $mergedData = array_merge($existingData, $updateData);
+            
+            // Create product instance of appropriate type to validate
+            $product = ProductFactory::create($mergedData);
+            
+            if (!$product->validate()) {
+                throw new \Exception("Product validation failed");
+            }
+            
+            // Update the product
+            $success = $this->repository->update($id, $updateData);
+            
+            return $success ? $this->getProduct($id) : null;
         } catch (\Exception $e) {
             throw new \Exception("Failed to update product: " . $e->getMessage());
         }
@@ -96,10 +162,10 @@ class ProductResolver
     /**
      * Delete product
      */
-    public function deleteProduct(int $id): bool
+    public function deleteProduct(string $id): bool
     {
         try {
-            return $this->model->delete(['id' => $id]);
+            return $this->repository->delete($id);
         } catch (\Exception $e) {
             throw new \Exception("Failed to delete product: " . $e->getMessage());
         }

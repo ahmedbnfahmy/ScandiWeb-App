@@ -2,10 +2,9 @@
 
 namespace App\GraphQL\Type;
 
+use App\GraphQL\Resolver\AttributeResolver;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
-use App\GraphQL\Type\AttributeType;
-
 
 class AttributeSetType
 {
@@ -28,11 +27,16 @@ class AttributeSetType
                     ],
                     'items' => [
                         'type' => Type::listOf(AttributeType::get()),
-                        'description' => 'List of attributes in this set'
+                        'description' => 'List of attributes in this set',
+                        'resolve' => function ($attributeSet) {
+                            $resolver = new AttributeResolver();
+                            return $resolver->getAttributeItems($attributeSet['id']);
+                        }
                     ]
                 ]
             ]);
         }
+        
         return self::$type;
     }
 }

@@ -26,6 +26,7 @@ class CurrencyType
                 ]
             ]);
         }
+        
         return self::$type;
     }
 }

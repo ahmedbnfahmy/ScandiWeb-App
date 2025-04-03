@@ -26,6 +26,7 @@ class PriceType
                 ]
             ]);
         }
+        
         return self::$type;
     }
 }

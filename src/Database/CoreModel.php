@@ -7,7 +7,41 @@ use PDOException;
 
 abstract class CoreModel extends Connection
 {
+    protected array $data = [];
+    
+    /**
+     * Get the table name for this model
+     */
     abstract protected function getTableName(): string;
+    
+    /**
+     * Set data for this model instance
+     */
+    public function setData(array $data): self
+    {
+        $this->data = $data;
+        return $this;
+    }
+    
+    /**
+     * Get data from this model instance
+     */
+    public function getData(string $key = null)
+    {
+        if ($key === null) {
+            return $this->data;
+        }
+        
+        return $this->data[$key] ?? null;
+    }
+    
+    /**
+     * Check if the model has a specific field
+     */
+    public function hasData(string $key): bool
+    {
+        return isset($this->data[$key]);
+    }
 
     /**
      * Fetch all records
@@ -26,7 +60,7 @@ abstract class CoreModel extends Connection
     /**
      * Find by ID
      */
-    public function find(int $id): ?array
+    public function find($id): ?array
     {
         try {
             $stmt = $this->getDb()->prepare("SELECT * FROM {$this->getTableName()} WHERE id = ?");
@@ -41,7 +75,7 @@ abstract class CoreModel extends Connection
     /**
      * Create new record
      */
-    public function create(array $data): int
+    public function create(array $data): string
     {
         try {
             $columns = implode(', ', array_keys($data));
@@ -52,7 +86,7 @@ abstract class CoreModel extends Connection
             );
             $stmt->execute(array_values($data));
             
-            return (int) $this->getDb()->lastInsertId();
+            return $this->getDb()->lastInsertId();
         } catch (PDOException $e) {
             throw new PDOException("Create failed: " . $e->getMessage());
         }
@@ -79,15 +113,13 @@ abstract class CoreModel extends Connection
     /**
      * Delete record
      */
-    public function delete(array $conditions): bool
+    public function delete($id): bool
     {
         try {
-            $where = implode(' AND ', array_map(fn($col) => "{$col} = ?", array_keys($conditions)));
-            
             $stmt = $this->getDb()->prepare(
-                "DELETE FROM {$this->getTableName()} WHERE {$where}"
+                "DELETE FROM {$this->getTableName()} WHERE id = ?"
             );
-            return $stmt->execute(array_values($conditions));
+            return $stmt->execute([$id]);
         } catch (PDOException $e) {
             throw new PDOException("Delete failed: " . $e->getMessage());
         }
@@ -113,6 +145,10 @@ abstract class CoreModel extends Connection
     public function findBy(array $conditions): array
     {
         try {
+            if (empty($conditions)) {
+                return $this->all();
+            }
+            
             $where = implode(' AND ', array_map(fn($col) => "{$col} = ?", array_keys($conditions)));
             
             $stmt = $this->getDb()->prepare(
@@ -124,76 +160,35 @@ abstract class CoreModel extends Connection
             throw new PDOException("FindBy failed: " . $e->getMessage());
         }
     }
-
     
-public function getAllProductsWithAttributes(): array
-{
-    // First, get all products
-    $products = $this->all();
-    $productIds = array_column($products, 'id');
-    
-    if (empty($productIds)) {
-        return [];
+    /**
+     * Load data from database by ID
+     */
+    public function load($id): self
+    {
+        $data = $this->find($id);
+        if ($data) {
+            $this->setData($data);
+        }
+        return $this;
     }
     
-    // Create placeholders for the IN clause
-    $placeholders = implode(',', array_fill(0, count($productIds), '?'));
-    
-    // Fetch attributes for all products in a single query
-    $allAttributes = $this->query(
-        "SELECT pa.product_id, pa.attribute_id, a.name, a.type, 
-                pa.value_id, v.display_value, v.value
-         FROM product_attributes pa
-         JOIN attributes a ON pa.attribute_id = a.id
-         JOIN attribute_items v ON pa.value_id = v.id
-         WHERE pa.product_id IN ($placeholders)",
-        $productIds
-    );
-    
-    // Group attributes by product
-    $attributesByProduct = [];
-    foreach ($allAttributes as $attr) {
-        $productId = $attr['product_id'];
-        $attrId = $attr['attribute_id'];
-        
-        if (!isset($attributesByProduct[$productId])) {
-            $attributesByProduct[$productId] = [];
-        }
-        
-        if (!isset($attributesByProduct[$productId][$attrId])) {
-            $attributesByProduct[$productId][$attrId] = [
-                'id' => $attrId,
-                'name' => $attr['name'],
-                'type' => $attr['type'],
-                'items' => []
-            ];
-        }
-        
-        $attributesByProduct[$productId][$attrId]['items'][] = [
-            'displayValue' => $attr['display_value'],
-            'value' => $attr['value'],
-            'id' => $attr['value_id']
-        ];
-    }
-    
-    // Add attributes to each product
-    foreach ($products as &$product) {
-        $id = $product['id'];
-        $product['attributes'] = isset($attributesByProduct[$id]) 
-            ? array_values($attributesByProduct[$id]) 
-            : [];
+    /**
+     * Save model to database (create or update)
+     */
+    public function save(array $data): string
+    {
+        if (isset($this->data['id'])) {
+            // Update existing record
+            $id = $this->data['id'];
+            $dataCopy = $this->data;
+            unset($dataCopy['id']);
             
-        // Convert in_stock to inStock for GraphQL schema
-        if (isset($product['in_stock'])) {
-            $product['inStock'] = (bool)$product['in_stock'];
-        }
-        
-        // Parse gallery JSON if it exists
-        if (isset($product['gallery']) && is_string($product['gallery'])) {
-            $product['gallery'] = json_decode($product['gallery'], true) ?? [];
+            $this->update($dataCopy, ['id' => $id]);
+            return $id;
+        } else {
+            // Create new record
+            return $this->create($this->data);
         }
     }
-    
-    return $products;
-}
 }
