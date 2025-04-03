@@ -3,6 +3,7 @@
 namespace App\GraphQL\Type;
 
 use App\GraphQL\Resolver\ProductResolver;
+use App\GraphQL\Resolver\OrderResolver;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 
@@ -10,7 +11,8 @@ class MutationType
 {
     public static function get(): ObjectType
     {
-        $resolver = new ProductResolver();
+        $productResolver = new ProductResolver();
+        $orderResolver = new OrderResolver();
 
         return new ObjectType([
             'name' => 'Mutation',
@@ -26,7 +28,7 @@ class MutationType
                         'inStock' => Type::boolean(),
                         'gallery' => Type::listOf(Type::string())
                     ],
-                    'resolve' => [$resolver, 'createProduct']
+                    'resolve' => [$productResolver, 'createProduct']
                 ],
                 'updateProduct' => [
                     'type' => ProductType::get(),
@@ -40,14 +42,22 @@ class MutationType
                         'inStock' => Type::boolean(),
                         'gallery' => Type::listOf(Type::string())
                     ],
-                    'resolve' => [$resolver, 'updateProduct']
+                    'resolve' => [$productResolver, 'updateProduct']
                 ],
                 'deleteProduct' => [
                     'type' => Type::boolean(),
                     'args' => [
                         'id' => Type::nonNull(Type::string())
                     ],
-                    'resolve' => [$resolver, 'deleteProduct']
+                    'resolve' => [$productResolver, 'deleteProduct']
+                ],
+                'createOrder' => [
+                    'type' => OrderType::get(),
+                    'description' => 'Create a new order',
+                    'args' => [
+                        'input' => Type::nonNull(OrderInputType::get())
+                    ],
+                    'resolve' => [$orderResolver, 'createOrder']
                 ]
             ]
         ]);

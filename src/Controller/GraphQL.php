@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\GraphQL\Resolver\ProductResolver;
 use App\GraphQL\Type\ProductType;
+use App\GraphQL\Type\MutationType;
 use GraphQL\GraphQL as GraphQLBase;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
@@ -37,6 +38,7 @@ class GraphQL {
             $schema = new Schema(
                 (new SchemaConfig())
                 ->setQuery($queryType)
+                ->setMutation(MutationType::get())  // Add mutation support
             );
         
             $rawInput = file_get_contents('php://input');
