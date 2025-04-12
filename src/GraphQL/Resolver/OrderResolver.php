@@ -5,132 +5,72 @@ namespace App\GraphQL\Resolver;
 use App\Models\Repository\OrderRepository;
 use App\Models\Repository\OrderItemRepository;
 use App\Models\Repository\ProductRepository;
-
+use App\Models\Repository\OrderItemAttributeRepository;
 class OrderResolver
 {
     private OrderRepository $orderRepository;
     private OrderItemRepository $orderItemRepository;
+    private OrderItemAttributeRepository $orderItemAttributeRepository;
     private ProductRepository $productRepository;
     
-    public function __construct()
-    {
-        $this->orderRepository = new OrderRepository();
-        $this->orderItemRepository = new OrderItemRepository();
-        $this->productRepository = new ProductRepository();
+    public function __construct(
+        OrderRepository $orderRepository,
+        OrderItemRepository $orderItemRepository,
+        OrderItemAttributeRepository $orderItemAttributeRepository,
+        ProductRepository $productRepository
+    ) {
+        $this->orderRepository = $orderRepository;
+        $this->orderItemRepository = $orderItemRepository;
+        $this->orderItemAttributeRepository = $orderItemAttributeRepository;
+        $this->productRepository = $productRepository;
     }
     
-    /**
-     * Get order by ID
-     */
-    public function getOrder(string $id): ?array
+    public function createOrder($rootValue, array $args): array
     {
-        try {
-            return $this->orderRepository->findById($id);
-        } catch (\Exception $e) {
-            throw new \Exception("Failed to fetch order: " . $e->getMessage());
-        }
-    }
-    
-    /**
-     * Get all orders
-     */
-    public function getOrders(): array
-    {
-        try {
-            return $this->orderRepository->findAll();
-        } catch (\Exception $e) {
-            throw new \Exception("Failed to fetch orders: " . $e->getMessage());
-        }
-    }
-    
-    /**
-     * Create a new order
-     */
-    public function createOrder(array $input): array
-    {
-        try {
-            // Start transaction
-            $this->orderRepository->beginTransaction();
+        $input = $args['input'];
+        
+        $order = [
+            'id' => uniqid('order_'),
+            'customerName' => 'Guest', 
+            'customerEmail' => 'guest@example.com',
+            'totalAmount' => $input['totalAmount'],
+            'status' => 'pending'
+        ];
+        
+        $order = $this->orderRepository->create($order);
+        
+        // Process items
+        foreach ($input['items'] as $itemInput) {
+            $product = $this->productRepository->getById($itemInput['productId']);
             
-            // Calculate total amount
-            $totalAmount = $this->calculateTotalAmount($input['items']);
-            
-            // Create order
-            $orderData = [
-                'customer_name' => $input['customerName'],
-                'customer_email' => $input['customerEmail'],
-                'address' => $input['address'] ?? '',
-                'total_amount' => $totalAmount,
-                'status' => 'pending',
-                'created_at' => date('Y-m-d H:i:s')
+            $orderItem = [
+                'id' => uniqid('item_'),
+                'orderId' => $order['id'],
+                'productId' => $itemInput['productId'],
+                'quantity' => $itemInput['quantity'],
+                'price' => $product['price'] ?? 0
             ];
             
-            $orderId = $this->orderRepository->create($orderData);
+            $orderItem = $this->orderItemRepository->create($orderItem);
             
-            // Create order items
-            foreach ($input['items'] as $item) {
-                // Get product information
-                $product = $this->productRepository->findById($item['productId']);
-                if (!$product) {
-                    throw new \Exception("Product not found: {$item['productId']}");
+            if (isset($itemInput['selectedAttributes'])) {
+                foreach ($itemInput['selectedAttributes'] as $attrInput) {
+                    $attr = [
+                        'orderItemId' => $orderItem['id'],
+                        'attributeSetId' => $attrInput['attributeSetId'],
+                        'attributeId' => $attrInput['attributeId']
+                    ];
+                    
+                    $this->orderItemAttributeRepository->create($attr);
                 }
-                
-                // Check stock
-                if (!$product['inStock']) {
-                    throw new \Exception("Product not in stock: {$product['name']}");
-                }
-                
-                // Get product price
-                $prices = $this->productRepository->getPricesForProduct($item['productId']);
-                $price = $prices[0]['amount'] ?? 0;
-                
-                // Format selected attributes
-                $selectedAttributes = [];
-                if (isset($item['selectedAttributes'])) {
-                    foreach ($item['selectedAttributes'] as $attr) {
-                        $selectedAttributes[$attr['attributeId']] = $attr['valueId'];
-                    }
-                }
-                
-                // Create order item
-                $orderItemData = [
-                    'order_id' => $orderId,
-                    'product_id' => $item['productId'],
-                    'quantity' => $item['quantity'],
-                    'unit_price' => $price,
-                    'selected_attributes' => json_encode($selectedAttributes)
-                ];
-                
-                $this->orderItemRepository->create($orderItemData);
             }
-            
-            // Commit transaction
-            $this->orderRepository->commit();
-            
-            // Return the created order
-            return $this->getOrder($orderId);
-        } catch (\Exception $e) {
-            // Rollback transaction on error
-            $this->orderRepository->rollback();
-            throw new \Exception("Failed to create order: " . $e->getMessage());
         }
+        
+        return $order;
     }
     
-    /**
-     * Calculate total order amount
-     */
-    private function calculateTotalAmount(array $items): float
+    public function getOrderItems(string $orderId): array
     {
-        $total = 0;
-        
-        foreach ($items as $item) {
-            // Get product price
-            $prices = $this->productRepository->getPricesForProduct($item['productId']);
-            $price = $prices[0]['amount'] ?? 0;
-            
-            $total += $price * $item['quantity'];
-        }
-        
-        return $total;
+        return $this->orderItemRepository->getByOrderId($orderId);
     }
 }

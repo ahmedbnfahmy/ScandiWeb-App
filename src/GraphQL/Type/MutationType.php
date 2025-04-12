@@ -4,6 +4,8 @@ namespace App\GraphQL\Type;
 
 use App\GraphQL\Resolver\ProductResolver;
 use App\GraphQL\Resolver\OrderResolver;
+use App\GraphQL\Type\Order\OrderType;
+use App\GraphQL\Type\Order\OrderInputType;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 
