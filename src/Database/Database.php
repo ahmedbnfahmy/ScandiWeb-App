@@ -29,7 +29,6 @@ class Database {
                 ];
 
                 self::$connection = new PDO($dsn, $dbConfig["user"], $dbConfig["pass"], $options);
-                echo "Database connection successful!";
             } catch (PDOException $e) {
                 throw new PDOException("Connection failed: " . $e->getMessage());
             }

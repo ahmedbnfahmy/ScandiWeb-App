@@ -38,7 +38,7 @@ class GraphQL {
             $schema = new Schema(
                 (new SchemaConfig())
                 ->setQuery($queryType)
-                ->setMutation(MutationType::get())  // Add mutation support
+                ->setMutation(MutationType::get())
             );
         
             $rawInput = file_get_contents('php://input');
