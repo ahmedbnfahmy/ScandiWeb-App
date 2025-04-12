@@ -4,6 +4,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use App\Database\Database;
 use App\Utility\ErrorHandler;
 use App\Utility\CorsHandler;
+use App\Utility\RateLimiter;
 
 ErrorHandler::register();
 
@@ -14,6 +15,21 @@ try {
     CorsHandler::handlePreflight();
     
     $connection = Database::getConnection();
+    
+    $clientIp = $_SERVER['REMOTE_ADDR'];
+
+    if (!RateLimiter::isAllowed($clientIp)) {
+        header('Content-Type: application/json');
+        http_response_code(429); // Too Many Requests
+        RateLimiter::addRateLimitHeaders($clientIp);
+        echo json_encode([
+            'errors' => [['message' => 'Too Many Requests. Please try again later.']]
+        ]);
+        exit;
+    }
+    
+    // Add rate limit headers to successful responses
+    RateLimiter::addRateLimitHeaders($clientIp);
     
     $dispatcher = FastRoute\simpleDispatcher(function(FastRoute\RouteCollector $r) {
         $r->post('/graphql', [App\Controller\GraphQL::class, 'handle']);
