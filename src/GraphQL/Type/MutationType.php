@@ -9,7 +9,7 @@ use App\Models\Repository\OrderRepository;
 use App\Models\Repository\OrderItemRepository;
 use App\Models\Repository\ProductRepository;
 use App\Models\Repository\AttributeRepository;
-use App\Models\Repository\AttributeSetRepository;
+use App\Models\Repository\AttributeItemRepository;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 
@@ -24,16 +24,10 @@ class MutationType
             $orderItemRepo = new OrderItemRepository();
             $productRepo = new ProductRepository();
             $attributeRepo = new AttributeRepository();
-            $attributeSetRepo = new AttributeSetRepository();
+            $attributeItemRepo = new AttributeItemRepository();
             
-            $orderResolver = new OrderResolver(
-                $orderRepo,
-                $orderItemRepo,
-                $productRepo,
-                $attributeRepo,
-                $attributeSetRepo
-            );
-
+            $orderResolver = new OrderResolver();
+            
             self::$type = new ObjectType([
                 'name' => 'Mutation',
                 'fields' => [

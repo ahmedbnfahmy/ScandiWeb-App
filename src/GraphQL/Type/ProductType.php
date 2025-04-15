@@ -2,7 +2,7 @@
 
 namespace App\GraphQL\Type;
 
-use App\GraphQL\Resolver\AttributeSetResolver;
+use App\GraphQL\Resolver\AttributeResolver;
 use App\GraphQL\Resolver\PriceResolver;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
@@ -46,11 +46,11 @@ class ProductType
                         'description' => 'Product brand'
                     ],
                     'attributes' => [
-                        'type' => Type::listOf(AttributeSetType::get()),
+                        'type' => Type::listOf(AttributeType::get()),
                         'description' => 'Product attributes',
                         'resolve' => function ($product) {
-                            $resolver = new AttributeSetResolver();
-                            return $resolver->getAttributeSetsForProduct($product['id']);
+                            $resolver = new AttributeResolver();
+                            return $resolver->getAttributesForProduct($product['id']);
                         }
                     ],
                     'prices' => [

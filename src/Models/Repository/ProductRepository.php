@@ -80,21 +80,6 @@ class ProductRepository extends CoreModel
         return $this->create($data);
     }
     
-    /**
-     * Update a product
-     */
-    public function update($id, array $data): bool
-    {
-        return parent::update($data, ['id' => $id]);
-    }
-    
-    /**
-     * Delete a product
-     */
-    public function delete($id): bool
-    {
-        return parent::delete($id);
-    }
     
     /**
      * Enrich products with attributes and other related data

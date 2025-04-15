@@ -3,7 +3,6 @@
 namespace App\GraphQL\Resolver;
 
 use App\Models\Repository\AttributeRepository;
-use App\Factories\AttributeFactory;
 
 class AttributeResolver
 {
@@ -23,40 +22,56 @@ class AttributeResolver
     public function getAttribute(string $id): ?array
     {
         try {
-            $rawData = $this->repository->findById($id);
+            $attribute = $this->repository->findById($id);
             
-            if (!$rawData) {
+            if (!$attribute) {
                 return null;
             }
             
-            // Create the right type of attribute object
-            $attribute = AttributeFactory::create($rawData);
-            
-            // Add attribute-specific enrichments
-            $data = $rawData;
-            $data['items'] = $attribute->getItems();
-            
-            // Add rendering information based on type
-            $data['input'] = $attribute->renderInput();
-            
-            return $data;
+            return $attribute->toGraphQL();
         } catch (\Exception $e) {
             throw new \Exception("Failed to fetch attribute: " . $e->getMessage());
         }
     }
     
     /**
-     * Get attribute items for an attribute set
+     * Get all attributes for a product
      * 
-     * @param string $attributeSetId ID of the attribute set
-     * @return array List of attribute items
+     * @param string $productId Product ID
+     * @return array List of attributes
      */
-    public function getAttributeItems(string $attributeSetId): array
+    public function getAttributesForProduct(string $productId): array
     {
         try {
-            return $this->repository->findByAttributeSetId($attributeSetId);
+            $attributes = $this->repository->findByProductIdWithItems($productId);
+            
+            // Convert to GraphQL format
+            return array_map(function($attribute) {
+                return $attribute->toGraphQL();
+            }, $attributes);
         } catch (\Exception $e) {
-            throw new \Exception("Failed to fetch attribute items: " . $e->getMessage());
+            throw new \Exception("Failed to fetch attributes: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Get attribute by name
+     * 
+     * @param string $name Attribute name
+     * @return array|null Attribute data or null if not found
+     */
+    public function getAttributeByName(string $name): ?array
+    {
+        try {
+            $attribute = $this->repository->findByName($name);
+            
+            if (!$attribute) {
+                return null;
+            }
+            
+            return $attribute->toGraphQL();
+        } catch (\Exception $e) {
+            throw new \Exception("Failed to fetch attribute: " . $e->getMessage());
         }
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\GraphQL\Type;
 
+use App\GraphQL\Resolver\AttributeItemResolver;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 
@@ -19,13 +20,21 @@ class AttributeType
                         'type' => Type::nonNull(Type::string()),
                         'description' => 'Attribute ID'
                     ],
-                    'displayValue' => [
+                    'name' => [
                         'type' => Type::nonNull(Type::string()),
-                        'description' => 'Display value of the attribute'
+                        'description' => 'Name of the attribute'
                     ],
-                    'value' => [
+                    'type' => [
                         'type' => Type::nonNull(Type::string()),
-                        'description' => 'Actual value of the attribute'
+                        'description' => 'Type of the attribute (text, swatch, etc.)'
+                    ],
+                    'items' => [
+                        'type' => Type::listOf(AttributeItemType::get()),
+                        'description' => 'List of items/values for this attribute',
+                        'resolve' => function ($attribute) {
+                            $resolver = new AttributeItemResolver();
+                            return $resolver->findByAttributeId($attribute['id']);
+                        }
                     ]
                 ]
             ]);

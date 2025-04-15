@@ -11,6 +11,8 @@ use App\GraphQL\Type\Order\OrderItemType;
 use App\GraphQL\Type\Order\OrderItemInputType;
 use App\GraphQL\Type\Order\SelectedAttributeType;
 use App\GraphQL\Type\Order\SelectedAttributeInputType;
+use App\GraphQL\Type\AttributeType;
+use App\GraphQL\Type\AttributeItemType;
 use GraphQL\GraphQL as GraphQLBase;
 use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
@@ -42,12 +44,18 @@ class GraphQL {
                     ]
                 ]
             ]);
+            
+            // Initialize order-related types
             OrderType::get();
             OrderInputType::get();
             OrderItemInputType::get();
             SelectedAttributeInputType::get();
             OrderItemType::get();
             SelectedAttributeType::get();
+            
+            // Initialize attribute-related types
+            AttributeType::get();
+            AttributeItemType::get();
         
             $schema = new Schema(
                 (new SchemaConfig())
