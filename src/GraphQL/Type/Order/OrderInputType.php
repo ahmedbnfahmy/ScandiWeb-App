@@ -2,7 +2,7 @@
 
 namespace App\GraphQL\Type\Order;
 
-use App\GraphQL\Type\Order\OrderItemType;
+use App\GraphQL\Type\Order\OrderItemInputType;
 use GraphQL\Type\Definition\InputObjectType;
 use GraphQL\Type\Definition\Type;
 
@@ -16,13 +16,25 @@ class OrderInputType
             self::$type = new InputObjectType([
                 'name' => 'OrderInput',
                 'fields' => [
-                    'items' => [
-                        'type' => Type::nonNull(Type::listOf(Type::nonNull(OrderItemType::get()))),
-                        'description' => 'List of order items'
+                    'customerName' => [
+                        'type' => Type::nonNull(Type::string()),
+                        'description' => 'Name of the customer'
+                    ],
+                    'customerEmail' => [
+                        'type' => Type::nonNull(Type::string()),
+                        'description' => 'Email of the customer'
+                    ],
+                    'address' => [
+                        'type' => Type::string(),
+                        'description' => 'Shipping address'
                     ],
                     'totalAmount' => [
                         'type' => Type::nonNull(Type::float()),
                         'description' => 'Total order amount'
+                    ],
+                    'items' => [
+                        'type' => Type::nonNull(Type::listOf(Type::nonNull(OrderItemInputType::get()))),
+                        'description' => 'List of order items'
                     ]
                 ]
             ]);

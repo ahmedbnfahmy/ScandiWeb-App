@@ -13,6 +13,22 @@ class ProductRepository extends CoreModel
     }
     
     /**
+     * Check if a product exists
+     * 
+     * @param string $productId The product ID
+     * @return bool Whether the product exists
+     */
+    public function productExists(string $productId): bool
+    {
+        $result = $this->query(
+            "SELECT COUNT(*) as count FROM products WHERE id = ?",
+            [$productId]
+        );
+        
+        return !empty($result) && (int)$result[0]['count'] > 0;
+    }
+    
+    /**
      * Find all products with attributes
      */
     public function findAll(): array

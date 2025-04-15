@@ -3,6 +3,8 @@
 namespace App\Models\Repository;
 
 use App\Database\CoreModel;
+use App\Util\UuidGenerator;
+use InvalidArgumentException;
 
 class OrderRepository extends CoreModel
 {
@@ -12,135 +14,94 @@ class OrderRepository extends CoreModel
     }
     
     /**
-     * Find order by ID
+     * Create a new order in the database
      * 
-     * @param string $id The order ID
-     * @return array|null The formatted order data or null if not found
+     * @param array $data The order data
+     * @return string The ID of the created order
+     * @throws InvalidArgumentException If validation fails
      */
-    public function findById(string $id): ?array
+    public function create(array $data): string
     {
-        $result = $this->find($id);
+        // Generate a UUID for the order ID if not provided
+        $orderId = $data['id'] ?? UuidGenerator::generate();
         
-        if (!$result) {
-            return null;
-        }
-        
-        return $this->formatOrder($result);
-    }
-    
-    /**
-     * Find all orders
-     * 
-     * @return array List of formatted orders
-     */
-    public function findAll(): array
-    {
-        $orders = $this->all();
-        $formattedOrders = [];
-        
-        foreach ($orders as $order) {
-            $formattedOrders[] = $this->formatOrder($order);
-        }
-        
-        return $formattedOrders;
-    }
-    
-    /**
-     * Create new order with complete order data
-     * 
-     * @param array $orderData Complete order data including customer info and total
-     * @return array The created order with formatted fields
-     */
-    public function createOrder(array $orderData): array
-    {
-        $dbData = [
-            'id' => $orderData['id'] ?? uniqid('order_'),
-            'customer_name' => $orderData['customerName'] ?? 'Guest',
-            'customer_email' => $orderData['customerEmail'] ?? 'guest@example.com',
-            'address' => $orderData['address'] ?? null,
-            'total_amount' => $orderData['totalAmount'],
-            'status' => $orderData['status'] ?? 'pending',
+        // Prepare order data for database
+        $orderData = [
+            'id' => $orderId,
+            'customer_name' => $data['customerName'],
+            'customer_email' => $data['customerEmail'],
+            'address' => $data['address'] ?? null,
+            'total_amount' => $data['totalAmount'],
+            'status' => $data['status'] ?? 'pending',
+            'created_at' => date('Y-m-d H:i:s')
         ];
         
-        $orderId = $this->create($dbData);
+        // Insert the order directly
+        $this->query(
+            "INSERT INTO orders (id, customer_name, customer_email, address, total_amount, status, created_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            [
+                $orderData['id'],
+                $orderData['customer_name'],
+                $orderData['customer_email'],
+                $orderData['address'],
+                $orderData['total_amount'],
+                $orderData['status'],
+                $orderData['created_at']
+            ]
+        );
         
-        return $this->findById($orderId);
-    }
-    
-    /**
-     * Find orders by customer email
-     * 
-     * @param string $email Customer email address
-     * @return array List of formatted orders
-     */
-    public function findByCustomerEmail(string $email): array
-    {
-        $query = "SELECT * FROM {$this->getTableName()} WHERE customer_email = :email ORDER BY created_at DESC";
-        $stmt = $this->getDb()->prepare($query);
-        $stmt->execute(['email' => $email]);
-        
-        $orders = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-        $formattedOrders = [];
-        
-        foreach ($orders as $order) {
-            $formattedOrders[] = $this->formatOrder($order);
+        // Insert order items if they exist
+        if (isset($data['items']) && !empty($data['items'])) {
+            $orderItemRepo = new OrderItemRepository();
+            $orderItemRepo->createOrderItems($orderId, $data['items']);
         }
         
-        return $formattedOrders;
+        return $orderId;
     }
     
     /**
-     * Update order status
+     * Create order and return order data
      * 
-     * @param string $id Order ID
-     * @param string $status New status
-     * @return bool Success flag
+     * @param array $data The order data
+     * @return array The created order data
      */
-    public function updateStatus(string $id, string $status): bool
+    public function createAndReturn(array $data): array
     {
-        return $this->update($id, ['status' => $status]);
-    }
-    
-    /**
-     * Format database order record for GraphQL
-     * 
-     * @param array $order Raw database order record
-     * @return array Formatted order for GraphQL
-     */
-    private function formatOrder(array $order): array
-    {
+        // Call the regular create method to insert the order
+        $orderId = $this->create($data);
+        
+        // Format order items for response
+        $orderItems = [];
+        if (isset($data['items']) && !empty($data['items'])) {
+            foreach ($data['items'] as $item) {
+                // Generate an ID for each item in the response
+                $itemId = UuidGenerator::generate();
+                
+                $orderItems[] = [
+                    'id' => $itemId,
+                    'productId' => $item['productId'],
+                    'quantity' => (int)$item['quantity'],
+                    'selectedAttributes' => array_map(function($attr) {
+                        return [
+                            'attributeSetId' => $attr['attributeSetId'],
+                            'attributeId' => $attr['attributeId']
+                        ];
+                    }, $item['selectedAttributes'] ?? [])
+                ];
+            }
+        }
+        
+        // Return the created order data directly
         return [
-            'id' => $order['id'],
-            'customerName' => $order['customer_name'],
-            'customerEmail' => $order['customer_email'],
-            'address' => $order['address'],
-            'totalAmount' => (float)$order['total_amount'],
-            'status' => $order['status'],
-            'createdAt' => $order['created_at']
+            'id' => $orderId,
+            'customerName' => $data['customerName'],
+            'customerEmail' => $data['customerEmail'],
+            'address' => $data['address'] ?? null,
+            'totalAmount' => (float)$data['totalAmount'],
+            'status' => $data['status'] ?? 'pending',
+            'createdAt' => date('Y-m-d H:i:s'),
+            'items' => $orderItems
         ];
-    }
-    
-    /**
-     * Begin a database transaction
-     */
-    public function beginTransaction(): void
-    {
-        $this->getDb()->beginTransaction();
-    }
-    
-    /**
-     * Commit a database transaction
-     */
-    public function commit(): void
-    {
-        $this->getDb()->commit();
-    }
-    
-    /**
-     * Rollback a database transaction
-     */
-    public function rollback(): void
-    {
-        $this->getDb()->rollBack();
     }
 }

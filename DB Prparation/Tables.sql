@@ -48,3 +48,38 @@ CREATE TABLE prices (
     __typename VARCHAR(50),
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
+
+CREATE TABLE `orders` (
+  `id` varchar(36) NOT NULL,
+  `customer_name` varchar(255) NOT NULL,
+  `customer_email` varchar(255) NOT NULL,
+  `address` text,
+  `total_amount` decimal(10,2) NOT NULL,
+  `status` varchar(50) NOT NULL DEFAULT 'pending',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+CREATE TABLE `order_items` (
+  `id` varchar(36) NOT NULL,
+  `order_id` varchar(36) NOT NULL,
+  `product_id` varchar(36) NOT NULL,
+  `quantity` int NOT NULL,
+  `price` decimal(10,2) NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `order_id` (`order_id`),
+  CONSTRAINT `order_items_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+CREATE TABLE `order_item_attributes` (
+  `id` varchar(36) NOT NULL,
+  `order_item_id` varchar(36) NOT NULL,
+  `attribute_set_id` varchar(36) NOT NULL,
+  `attribute_id` varchar(36) NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `order_item_id` (`order_item_id`),
+  CONSTRAINT `order_item_attributes_ibfk_1` FOREIGN KEY (`order_item_id`) REFERENCES `order_items` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
