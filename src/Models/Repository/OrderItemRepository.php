@@ -21,12 +21,12 @@ class OrderItemRepository extends CoreModel
     public function getOrderItems(string $orderId): array
     {
         $query = "
-            SELECT oi.id, oi.product_id, oi.quantity, 
-                   oia.attribute_set_id, oia.attribute_id
+            SELECT oi.id, oi.product_id, oi.quantity, oi.price,
+                   oia.attribute_name, oia.attribute_id, oia.attribute_items_id, oia.display_value
             FROM order_items oi
             LEFT JOIN order_item_attributes oia ON oi.id = oia.order_item_id
             WHERE oi.order_id = ?
-            ORDER BY oi.id, oia.attribute_set_id, oia.attribute_id
+            ORDER BY oi.id
         ";
         
         $results = $this->query($query, [$orderId]);
@@ -41,15 +41,17 @@ class OrderItemRepository extends CoreModel
                     'id' => $itemId,
                     'productId' => $row['product_id'],
                     'quantity' => (int)$row['quantity'],
+                    'price' => (float)$row['price'],
                     'selectedAttributes' => []
                 ];
             }
             
             // Add attributes only if they exist (non-null)
-            if ($row['attribute_set_id'] !== null && $row['attribute_id'] !== null) {
+            if ($row['attribute_name'] !== null) {
                 $groupedItems[$itemId]['selectedAttributes'][] = [
-                    'attributeSetId' => $row['attribute_set_id'],
-                    'attributeId' => $row['attribute_id']
+                    'attributeName' => $row['attribute_name'],
+                    'attributeItemId' => $row['attribute_items_id'],
+                    'displayValue' => $row['display_value']
                 ];
             }
         }
@@ -85,14 +87,12 @@ class OrderItemRepository extends CoreModel
                 $price = $product['prices'][0]['amount'] ?? 0;
             }
             
-            // Insert order item with price
             $this->query(
                 "INSERT INTO order_items (id, order_id, product_id, quantity, price) 
                  VALUES (?, ?, ?, ?, ?)",
                 [$itemId, $orderId, $item['productId'], $item['quantity'], $price]
             );
             
-            // Insert selected attributes if any
             if (isset($item['selectedAttributes']) && !empty($item['selectedAttributes'])) {
                 $attributeRepo = new OrderItemAttributeRepository();
                 $attributeRepo->saveItemAttributes($itemId, $item['selectedAttributes']);
@@ -137,6 +137,7 @@ class OrderItemRepository extends CoreModel
     public function createOrderItems(string $orderId, array $items): array
     {
         $productRepo = new ProductRepository();
+        $attributeRepo = new ProductAttributeRepository();
         $createdItems = [];
         
         foreach ($items as $item) {
@@ -167,14 +168,42 @@ class OrderItemRepository extends CoreModel
                 'id' => $itemId,
                 'productId' => $item['productId'],
                 'quantity' => (int)$item['quantity'],
-                'price' => (float)$price
+                'price' => (float)$price,
+                'selectedAttributes' => []
             ];
             
-            // Insert selected attributes if any
-            $attributeRepo = new OrderItemAttributeRepository();
+            // Process and insert selected attributes if any
+            $orderItemAttributeRepo = new OrderItemAttributeRepository();
             
             if (isset($item['selectedAttributes']) && !empty($item['selectedAttributes'])) {
-                $attributeRepo->createItemAttributes($itemId, $item['selectedAttributes']);
+                // Process each attribute to lookup database IDs
+                $processedAttributes = [];
+                
+                foreach ($item['selectedAttributes'] as $attr) {
+                    // Look up attribute DB IDs
+                    $attributeInfo = $attributeRepo->getAttributeInfo(
+                        $item['productId'], 
+                        $attr['attributeName'],
+                        $attr['attributeItemId']
+                    );
+                    
+                    if ($attributeInfo) {
+                        // Add database IDs to the attribute
+                        $attr['attribute_id'] = $attributeInfo['attribute_id'];
+                        $attr['attribute_items_id'] = $attributeInfo['attribute_items_id'];
+                        
+                        // If displayValue wasn't provided, use the one from the database
+                        if (!isset($attr['displayValue']) && isset($attributeInfo['display_value'])) {
+                            $attr['displayValue'] = $attributeInfo['display_value'];
+                        }
+                    }
+                    
+                    $processedAttributes[] = $attr;
+                }
+                
+                // Create attributes with the enhanced data
+                $createdAttributes = $orderItemAttributeRepo->createItemAttributes($itemId, $processedAttributes);
+                $createdItem['selectedAttributes'] = $createdAttributes;
             }
             
             $createdItems[] = $createdItem;

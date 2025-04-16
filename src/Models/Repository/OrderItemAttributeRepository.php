@@ -27,23 +27,55 @@ class OrderItemAttributeRepository extends CoreModel
             $attributeId = UuidGenerator::generate();
             
             $this->query(
-                "INSERT INTO order_item_attributes (id, order_item_id, attribute_set_id, attribute_id) 
-                 VALUES (?, ?, ?, ?)",
+                "INSERT INTO order_item_attributes 
+                (id, order_item_id, attribute_name, attribute_id, attribute_items_id, display_value) 
+                VALUES (?, ?, ?, ?, ?, ?)",
                 [
                     $attributeId,
                     $orderItemId, 
-                    $attribute['attributeSetId'], 
-                    $attribute['attributeId']
+                    $attribute['attributeName'],
+                    $attribute['attribute_id'] ?? null,
+                    $attribute['attribute_items_id'] ?? null, 
+                    $attribute['displayValue'] ?? null
                 ]
             );
             
             $createdAttributes[] = [
-                'attributeSetId' => $attribute['attributeSetId'],
-                'attributeId' => $attribute['attributeId']
+                'attributeName' => $attribute['attributeName'],
+                'attributeItemId' => $attribute['attributeItemId'],
+                'displayValue' => $attribute['displayValue'] ?? null
             ];
         }
         
         return $createdAttributes;
+    }
+    
+    /**
+     * Save attributes for an order item
+     * 
+     * @param string $orderItemId The order item ID
+     * @param array $attributes The attributes to save
+     * @return void
+     */
+    public function saveItemAttributes(string $orderItemId, array $attributes): void
+    {
+        foreach ($attributes as $attribute) {
+            $attributeId = UuidGenerator::generate();
+            
+            $this->query(
+                "INSERT INTO order_item_attributes 
+                (id, order_item_id, attribute_name, attribute_id, attribute_items_id, display_value) 
+                VALUES (?, ?, ?, ?, ?, ?)",
+                [
+                    $attributeId,
+                    $orderItemId, 
+                    $attribute['attributeName'],
+                    $attribute['attribute_id'] ?? null,
+                    $attribute['attribute_items_id'] ?? null,
+                    $attribute['displayValue'] ?? null
+                ]
+            );
+        }
     }
     
     /**
@@ -68,6 +100,15 @@ class OrderItemAttributeRepository extends CoreModel
      */
     public function getAttributesByOrderItemId(string $orderItemId): array
     {
-        return $this->findBy(['order_item_id' => $orderItemId]);
+        $attributes = $this->findBy(['order_item_id' => $orderItemId]);
+        
+        // Transform attribute keys to GraphQL format
+        return array_map(function($attr) {
+            return [
+                'attributeName' => $attr['attribute_name'],
+                'attributeItemId' => $attr['attribute_item_id'],
+                'displayValue' => $attr['display_value'] ?? null
+            ];
+        }, $attributes);
     }
 } 

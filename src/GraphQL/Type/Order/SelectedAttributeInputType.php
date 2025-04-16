@@ -22,6 +22,18 @@ class SelectedAttributeInputType
                     'attributeItemId' => [
                         'type' => Type::nonNull(Type::string()),
                         'description' => 'ID of the selected attribute item (e.g., "Small", "Red")'
+                    ],
+                    'displayValue' => [
+                        'type' => Type::string(),
+                        'description' => 'Optional display value of the selected attribute item'
+                    ],
+                    'attribute_id' => [
+                        'type' => Type::int(),
+                        'description' => 'Database ID of the attribute (for internal use)'
+                    ],
+                    'attribute_items_id' => [
+                        'type' => Type::int(),
+                        'description' => 'Database ID of the attribute item (for internal use)'
                     ]
                 ]
             ]);
