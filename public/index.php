@@ -9,8 +9,16 @@ use App\Utility\RateLimiter;
 ErrorHandler::register();
 
 try {
-    Database::initialize(parse_ini_file(__DIR__ . '/../.env'));
+
+    $dbConfig = [
+        'DB_HOST' => getenv('DB_HOST'),
+        'DB_USER' => getenv('DB_USER'),
+        'DB_PASS' => getenv('DB_PASS'),
+        'DB_DATABASE' => getenv('DB_DATABASE'),
+        'DB_DRIVER' => getenv('DB_DRIVER') ?: 'mysql'
+    ];
     
+    Database::initialize($dbConfig);    
     CorsHandler::addHeaders();
     CorsHandler::handlePreflight();
     
