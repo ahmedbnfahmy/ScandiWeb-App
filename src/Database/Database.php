@@ -21,7 +21,7 @@ class Database {
 
             try {
                 $dbConfig = self::$config->db;
-                $dsn = "{$dbConfig["driver"]}:host={$dbConfig["host"]};dbname={$dbConfig["database"]};charset=utf8mb4";
+                $dsn = "{$dbConfig["driver"]}:host={$dbConfig["host"]};port={$dbConfig["port"]};dbname={$dbConfig["database"]};charset=utf8mb4";
                 $options = [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

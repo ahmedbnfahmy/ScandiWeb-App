@@ -9,7 +9,16 @@ use App\Utility\RateLimiter;
 ErrorHandler::register();
 
 try {
-    Database::initialize(parse_ini_file(__DIR__ . '/../.env'));
+    $dbConfig = [
+        'DB_HOST' => getenv('DB_HOST'),
+        'DB_USER' => getenv('DB_USER'),
+        'DB_PASS' => getenv('DB_PASS'),
+        'DB_DATABASE' => getenv('DB_DATABASE'),
+        'DB_DRIVER' => getenv('DB_DRIVER') ?: 'mysql',
+        'DB_PORT' => getenv('DB_PORT') ?: '3306'  // Add this line with default fallback    
+    ];
+    
+    Database::initialize($dbConfig);
     
     CorsHandler::addHeaders();
     CorsHandler::handlePreflight();
@@ -35,9 +44,15 @@ try {
         $r->post('/graphql', [App\Controller\GraphQL::class, 'handle']);
     });
     
+    // In your public/index.php file
+    $uri = $_SERVER['REQUEST_URI'];
+    // Strip query string and normalize slashes
+    $uri = parse_url($uri, PHP_URL_PATH);
+    $uri = '/' . trim($uri, '/'); // This ensures the URI starts with a slash
+
     $routeInfo = $dispatcher->dispatch(
         $_SERVER['REQUEST_METHOD'],
-        $_SERVER['REQUEST_URI']
+        $uri
     );
     
     switch ($routeInfo[0]) {
