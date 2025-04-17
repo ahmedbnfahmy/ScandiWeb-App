@@ -13,12 +13,7 @@ class AttributeResolver
         $this->repository = new AttributeRepository();
     }
     
-    /**
-     * Get a single attribute by ID
-     * 
-     * @param string $id Attribute ID
-     * @return array|null Attribute data or null if not found
-     */
+    
     public function getAttribute(string $id): ?array
     {
         try {
@@ -34,18 +29,13 @@ class AttributeResolver
         }
     }
     
-    /**
-     * Get all attributes for a product
-     * 
-     * @param string $productId Product ID
-     * @return array List of attributes
-     */
+    
     public function getAttributesForProduct(string $productId): array
     {
         try {
             $attributes = $this->repository->findByProductIdWithItems($productId);
             
-            // Convert to GraphQL format
+            
             return array_map(function($attribute) {
                 return $attribute->toGraphQL();
             }, $attributes);
@@ -54,12 +44,7 @@ class AttributeResolver
         }
     }
     
-    /**
-     * Get attribute by name
-     * 
-     * @param string $name Attribute name
-     * @return array|null Attribute data or null if not found
-     */
+    
     public function getAttributeByName(string $name): ?array
     {
         try {

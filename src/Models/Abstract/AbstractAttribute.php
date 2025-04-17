@@ -14,9 +14,7 @@ abstract class AbstractAttribute extends AbstractModel
         return static::TYPE;
     }
     
-    /**
-     * Get items for this attribute
-     */
+    
     public function getItems(): array
     {
         return $this->query(

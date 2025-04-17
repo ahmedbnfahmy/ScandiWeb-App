@@ -17,7 +17,7 @@ class QueryType
             self::$type = new ObjectType([
                 'name' => 'Query',
                 'fields' => [
-                    // Categories
+                    
                     'categories' => [
                         'type' => Type::listOf(CategoryType::get()),
                         'resolve' => function () {
@@ -36,7 +36,7 @@ class QueryType
                         }
                     ],
                     
-                    // Products
+                    
                     'products' => [
                         'type' => Type::listOf(ProductType::get()),
                         'args' => [

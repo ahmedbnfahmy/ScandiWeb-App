@@ -4,37 +4,22 @@ namespace App\Models\Entity;
 
 class Attribute
 {
-    /**
-     * @var int
-     */
+    
     public int $id;
     
-    /**
-     * @var string
-     */
+    
     public string $product_id;
     
-    /**
-     * @var string
-     */
+    
     public string $name;
     
-    /**
-     * @var string
-     */
+    
     public string $type;
     
-    /**
-     * @var array|null
-     */
+    
     public ?array $items = null;
     
-    /**
-     * Create an Attribute instance from an array of data
-     * 
-     * @param array $data The attribute data
-     * @return self
-     */
+    
     public static function fromArray(array $data): self
     {
         $attribute = new self();
@@ -48,11 +33,7 @@ class Attribute
         return $attribute;
     }
     
-    /**
-     * Convert the Attribute to an array
-     * 
-     * @return array
-     */
+    
     public function toArray(): array
     {
         $result = [
@@ -69,11 +50,7 @@ class Attribute
         return $result;
     }
     
-    /**
-     * Convert to GraphQL compatible format
-     * 
-     * @return array
-     */
+    
     public function toGraphQL(): array
     {
         $result = [

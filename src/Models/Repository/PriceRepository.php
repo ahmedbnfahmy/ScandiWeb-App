@@ -11,9 +11,7 @@ class PriceRepository extends CoreModel
         return 'prices';
     }
     
-    /**
-     * Find prices by product ID
-     */
+    
     public function findByProductId(string $productId): array
     {
         $prices = $this->query(
@@ -23,7 +21,7 @@ class PriceRepository extends CoreModel
             [$productId]
         );
         
-        // Format prices to match GraphQL schema
+        
         $result = [];
         foreach ($prices as $price) {
             $result[] = [

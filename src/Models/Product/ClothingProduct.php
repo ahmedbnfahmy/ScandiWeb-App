@@ -13,7 +13,7 @@ class ClothingProduct extends AbstractProduct
     
     public function validate(): bool
     {
-        // Clothing-specific validation
+        
         return !empty($this->getData('name')) && 
                !empty($this->getData('brand')) &&
                $this->hasSizeAttribute();
@@ -21,7 +21,7 @@ class ClothingProduct extends AbstractProduct
     
     public function getSpecificAttributes(): array
     {
-        // Clothing-specific attributes logic
+        
         return [];
     }
     

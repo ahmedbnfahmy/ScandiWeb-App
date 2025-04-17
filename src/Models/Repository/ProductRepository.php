@@ -12,12 +12,7 @@ class ProductRepository extends CoreModel
         return 'products';
     }
     
-    /**
-     * Check if a product exists
-     * 
-     * @param string $productId The product ID
-     * @return bool Whether the product exists
-     */
+    
     public function productExists(string $productId): bool
     {
         $result = $this->query(
@@ -28,19 +23,15 @@ class ProductRepository extends CoreModel
         return !empty($result) && (int)$result[0]['count'] > 0;
     }
     
-    /**
-     * Find all products with attributes
-     */
+    
     public function findAll(): array
     {
-        // Get all products
+        
         $products = $this->all();
         return $this->enrichProducts($products);
     }
     
-    /**
-     * Find product by ID with attributes
-     */
+    
     public function findById($id): ?array
     {
         $product = $this->find($id);
@@ -52,21 +43,17 @@ class ProductRepository extends CoreModel
         return $enriched[0] ?? null;
     }
     
-    /**
-     * Find products by category
-     */
+    
     public function findByCategory(string $category): array
     {
         $products = $this->findBy(['category' => $category]);
         return $this->enrichProducts($products);
     }
     
-    /**
-     * Save a product
-     */
+    
     public function save(array $data): string
     {
-        // If has ID, update existing record
+        
         if (isset($data['id'])) {
             $id = $data['id'];
             $dataCopy = $data;
@@ -76,14 +63,12 @@ class ProductRepository extends CoreModel
             return $id;
         }
         
-        // Otherwise create new record
+        
         return $this->create($data);
     }
     
     
-    /**
-     * Enrich products with attributes and other related data
-     */
+    
     private function enrichProducts(array $products): array
     {
         if (empty($products)) {
@@ -93,23 +78,23 @@ class ProductRepository extends CoreModel
         $productIds = array_column($products, 'id');
         $placeholders = implode(',', array_fill(0, count($productIds), '?'));
         
-        // Get attributes
+        
         $attributes = $this->getAttributesForProducts($productIds, $placeholders);
         
-        // Get prices
+        
         $prices = $this->getPricesForProducts($productIds, $placeholders);
         
-        // Get gallery
+        
         $gallery = $this->getGalleryForProducts($productIds, $placeholders);
         
-        // Enrich products
+        
         foreach ($products as &$product) {
             $id = $product['id'];
             $product['attributes'] = $attributes[$id] ?? [];
             $product['prices'] = $prices[$id] ?? [];
             $product['gallery'] = $gallery[$id] ?? [];
             
-            // Handle field name conversion
+            
             if (isset($product['in_stock'])) {
                 $product['inStock'] = (bool)$product['in_stock'];
             }
@@ -118,9 +103,7 @@ class ProductRepository extends CoreModel
         return $products;
     }
     
-    /**
-     * Get attributes for multiple products
-     */
+    
     private function getAttributesForProducts(array $productIds, string $placeholders): array
     {
         $attributeRows = $this->query(
@@ -144,7 +127,7 @@ class ProductRepository extends CoreModel
             $attributeIds
         );
         
-        // Group items by attribute
+        
         $itemsByAttr = [];
         foreach ($attributeItems as $item) {
             $attrId = $item['attribute_id'];
@@ -154,7 +137,7 @@ class ProductRepository extends CoreModel
             $itemsByAttr[$attrId][] = $item;
         }
         
-        // Group attributes by product
+        
         $attributesByProduct = [];
         foreach ($attributeRows as $attr) {
             $productId = $attr['product_id'];
@@ -173,9 +156,7 @@ class ProductRepository extends CoreModel
         return $attributesByProduct;
     }
     
-    /**
-     * Get prices for multiple products
-     */
+    
     private function getPricesForProducts(array $productIds, string $placeholders): array
     {
         $priceRows = $this->query(
@@ -185,7 +166,7 @@ class ProductRepository extends CoreModel
             $productIds
         );
         
-        // Group prices by product
+        
         $pricesByProduct = [];
         foreach ($priceRows as $price) {
             $productId = $price['product_id'];
@@ -205,9 +186,7 @@ class ProductRepository extends CoreModel
         return $pricesByProduct;
     }
     
-    /**
-     * Get gallery for multiple products
-     */
+    
     private function getGalleryForProducts(array $productIds, string $placeholders): array
     {
         $galleryRows = $this->query(
@@ -217,7 +196,7 @@ class ProductRepository extends CoreModel
             $productIds
         );
         
-        // Group images by product
+        
         $galleryByProduct = [];
         foreach ($galleryRows as $image) {
             $productId = $image['product_id'];

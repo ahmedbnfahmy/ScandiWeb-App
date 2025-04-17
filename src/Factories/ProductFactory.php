@@ -15,7 +15,7 @@ class ProductFactory
         $product = match ($category) {
             'clothes' => new ClothingProduct(),
             'tech' => new TechProduct(),
-            default => new TechProduct() // Default case
+            default => new TechProduct() 
         };
         
         $product->setData($data);

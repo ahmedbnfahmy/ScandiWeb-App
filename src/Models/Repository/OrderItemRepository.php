@@ -12,12 +12,7 @@ class OrderItemRepository extends CoreModel
         return 'order_items';
     }
     
-    /**
-     * Get items for a specific order
-     * 
-     * @param string $orderId The order ID
-     * @return array Order items with their attributes
-     */
+    
     public function getOrderItems(string $orderId): array
     {
         $query = "
@@ -31,7 +26,7 @@ class OrderItemRepository extends CoreModel
         
         $results = $this->query($query, [$orderId]);
         
-        // Group the results by order item
+        
         $groupedItems = [];
         foreach ($results as $row) {
             $itemId = $row['id'];
@@ -46,7 +41,7 @@ class OrderItemRepository extends CoreModel
                 ];
             }
             
-            // Add attributes only if they exist (non-null)
+            
             if ($row['attribute_name'] !== null) {
                 $groupedItems[$itemId]['selectedAttributes'][] = [
                     'attributeName' => $row['attribute_name'],
@@ -56,17 +51,11 @@ class OrderItemRepository extends CoreModel
             }
         }
         
-        // Convert to indexed array
+        
         return array_values($groupedItems);
     }
     
-    /**
-     * Save order items and their attributes
-     * 
-     * @param string $orderId The order ID
-     * @param array $items The order items
-     * @return void
-     */
+    
     public function saveOrderItems(string $orderId, array $items): void
     {
         $productRepo = new ProductRepository();
@@ -74,14 +63,14 @@ class OrderItemRepository extends CoreModel
         foreach ($items as $item) {
             $itemId = UuidGenerator::generate();
             
-            // Get the product to fetch its price
+            
             $product = $productRepo->findById($item['productId']);
             
             if (!$product) {
                 throw new \InvalidArgumentException("Product not found: {$item['productId']}");
             }
             
-            // Get the first price from the product (or use default if not found)
+            
             $price = 0;
             if (isset($product['prices']) && !empty($product['prices'])) {
                 $price = $product['prices'][0]['amount'] ?? 0;
@@ -100,40 +89,24 @@ class OrderItemRepository extends CoreModel
         }
     }
     
-    /**
-     * Find order items by product ID
-     * 
-     * @param string $productId The product ID
-     * @return array Order items
-     */
+    
     public function findByProductId(string $productId): array
     {
         return $this->findBy(['product_id' => $productId]);
     }
     
-    /**
-     * Delete order item
-     * 
-     * @param string $id The order item ID
-     * @return bool Whether the delete was successful
-     */
+    
     public function deleteOrderItem(string $id): bool
     {
-        // Delete related attributes first
+        
         $attributeRepo = new OrderItemAttributeRepository();
         $attributeRepo->deleteByOrderItemId($id);
         
-        // Then delete the order item
+        
         return parent::delete($id);
     }
     
-    /**
-     * Create order items for an order
-     * 
-     * @param string $orderId The order ID
-     * @param array $items The order items data
-     * @return array The created order items with IDs
-     */
+    
     public function createOrderItems(string $orderId, array $items): array
     {
         $productRepo = new ProductRepository();
@@ -143,27 +116,27 @@ class OrderItemRepository extends CoreModel
         foreach ($items as $item) {
             $itemId = UuidGenerator::generate();
             
-            // Get the product to fetch its price
+            
             $product = $productRepo->findById($item['productId']);
             
             if (!$product) {
                 throw new \InvalidArgumentException("Product not found: {$item['productId']}");
             }
             
-            // Get the first price from the product (or use default if not found)
+            
             $price = 0;
             if (isset($product['prices']) && !empty($product['prices'])) {
                 $price = $product['prices'][0]['amount'] ?? 0;
             }
             
-            // Insert order item with price
+            
             $this->query(
                 "INSERT INTO order_items (id, order_id, product_id, quantity, price) 
                  VALUES (?, ?, ?, ?, ?)",
                 [$itemId, $orderId, $item['productId'], $item['quantity'], $price]
             );
             
-            // Create the item data structure for return
+            
             $createdItem = [
                 'id' => $itemId,
                 'productId' => $item['productId'],
@@ -172,15 +145,15 @@ class OrderItemRepository extends CoreModel
                 'selectedAttributes' => []
             ];
             
-            // Process and insert selected attributes if any
+            
             $orderItemAttributeRepo = new OrderItemAttributeRepository();
             
             if (isset($item['selectedAttributes']) && !empty($item['selectedAttributes'])) {
-                // Process each attribute to lookup database IDs
+                
                 $processedAttributes = [];
                 
                 foreach ($item['selectedAttributes'] as $attr) {
-                    // Look up attribute DB IDs
+                    
                     $attributeInfo = $attributeRepo->getAttributeInfo(
                         $item['productId'], 
                         $attr['attributeName'],
@@ -188,11 +161,11 @@ class OrderItemRepository extends CoreModel
                     );
                     
                     if ($attributeInfo) {
-                        // Add database IDs to the attribute
+                        
                         $attr['attribute_id'] = $attributeInfo['attribute_id'];
                         $attr['attribute_items_id'] = $attributeInfo['attribute_items_id'];
                         
-                        // If displayValue wasn't provided, use the one from the database
+                        
                         if (!isset($attr['displayValue']) && isset($attributeInfo['display_value'])) {
                             $attr['displayValue'] = $attributeInfo['display_value'];
                         }
@@ -201,7 +174,7 @@ class OrderItemRepository extends CoreModel
                     $processedAttributes[] = $attr;
                 }
                 
-                // Create attributes with the enhanced data
+                
                 $createdAttributes = $orderItemAttributeRepo->createItemAttributes($itemId, $processedAttributes);
                 $createdItem['selectedAttributes'] = $createdAttributes;
             }

@@ -13,12 +13,7 @@ class AttributeRepository extends CoreModel
         return 'attributes';
     }
     
-    /**
-     * Find attribute by ID
-     * 
-     * @param int $id The attribute ID
-     * @return Attribute|null
-     */
+    
     public function findById(int $id): ?Attribute
     {
         $data = parent::find($id);
@@ -30,12 +25,7 @@ class AttributeRepository extends CoreModel
         return Attribute::fromArray($data);
     }
     
-    /**
-     * Find attribute by name
-     * 
-     * @param string $name The attribute name
-     * @return Attribute|null
-     */
+    
     public function findByName(string $name): ?Attribute
     {
         $result = $this->findBy(['name' => $name]);
@@ -47,12 +37,7 @@ class AttributeRepository extends CoreModel
         return Attribute::fromArray($result[0]);
     }
     
-    /**
-     * Find attributes by product ID
-     * 
-     * @param string $productId The product ID
-     * @return array Array of Attribute objects
-     */
+    
     public function findByProductId(string $productId): array
     {
         $result = $this->findBy(['product_id' => $productId]);
@@ -69,12 +54,7 @@ class AttributeRepository extends CoreModel
         return $attributes;
     }
     
-    /**
-     * Find attributes by product ID with items
-     * 
-     * @param string $productId The product ID
-     * @return array Array of Attribute objects with items
-     */
+    
     public function findByProductIdWithItems(string $productId): array
     {
         $attributes = $this->findByProductId($productId);
@@ -92,12 +72,7 @@ class AttributeRepository extends CoreModel
         return $attributes;
     }
     
-    /**
-     * Check if attribute exists
-     * 
-     * @param string $name The attribute name
-     * @return bool
-     */
+    
     public function attributeExists(string $name): bool
     {
         $result = $this->query(
