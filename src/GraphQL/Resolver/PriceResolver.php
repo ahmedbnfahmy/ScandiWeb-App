@@ -13,9 +13,7 @@ class PriceResolver
         $this->repository = new PriceRepository();
     }
     
-    /**
-     * Get prices for a product
-     */
+    
     public function getPricesForProduct(string $productId): array
     {
         try {

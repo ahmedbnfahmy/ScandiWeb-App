@@ -9,23 +9,17 @@ abstract class CoreModel extends Connection
 {
     protected array $data = [];
     
-    /**
-     * Get the table name for this model
-     */
+    
     abstract protected function getTableName(): string;
     
-    /**
-     * Set data for this model instance
-     */
+    
     public function setData(array $data): self
     {
         $this->data = $data;
         return $this;
     }
     
-    /**
-     * Get data from this model instance
-     */
+    
     public function getData(string $key = null)
     {
         if ($key === null) {
@@ -35,17 +29,13 @@ abstract class CoreModel extends Connection
         return $this->data[$key] ?? null;
     }
     
-    /**
-     * Check if the model has a specific field
-     */
+    
     public function hasData(string $key): bool
     {
         return isset($this->data[$key]);
     }
 
-    /**
-     * Fetch all records
-     */
+    
     public function all(): array
     {
         try {
@@ -57,9 +47,7 @@ abstract class CoreModel extends Connection
         }
     }
 
-    /**
-     * Find by ID
-     */
+    
     public function find($id): ?array
     {
         try {
@@ -72,9 +60,7 @@ abstract class CoreModel extends Connection
         }
     }
 
-    /**
-     * Create new record
-     */
+    
     public function create(array $data): string
     {
         try {
@@ -92,9 +78,7 @@ abstract class CoreModel extends Connection
         }
     }
 
-    /**
-     * Update record
-     */
+    
     public function update(array $data, array $conditions): bool
     {
         try {
@@ -110,9 +94,7 @@ abstract class CoreModel extends Connection
         }
     }
 
-    /**
-     * Delete record
-     */
+    
     public function delete($id): bool
     {
         try {
@@ -125,9 +107,7 @@ abstract class CoreModel extends Connection
         }
     }
 
-    /**
-     * Custom query
-     */
+    
     public function query(string $query, array $params = []): array
     {
         try {
@@ -139,9 +119,7 @@ abstract class CoreModel extends Connection
         }
     }
 
-    /**
-     * Find by conditions
-     */
+    
     public function findBy(array $conditions): array
     {
         try {
@@ -161,9 +139,7 @@ abstract class CoreModel extends Connection
         }
     }
     
-    /**
-     * Load data from database by ID
-     */
+    
     public function load($id): self
     {
         $data = $this->find($id);
@@ -173,13 +149,11 @@ abstract class CoreModel extends Connection
         return $this;
     }
     
-    /**
-     * Save model to database (create or update)
-     */
+    
     public function save(array $data): string
     {
         if (isset($this->data['id'])) {
-            // Update existing record
+            
             $id = $this->data['id'];
             $dataCopy = $this->data;
             unset($dataCopy['id']);
@@ -187,7 +161,7 @@ abstract class CoreModel extends Connection
             $this->update($dataCopy, ['id' => $id]);
             return $id;
         } else {
-            // Create new record
+            
             return $this->create($this->data);
         }
     }

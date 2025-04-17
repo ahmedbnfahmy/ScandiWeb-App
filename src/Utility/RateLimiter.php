@@ -4,19 +4,14 @@ namespace App\Utility;
 
 class RateLimiter
 {
-    private const LIMIT = 30; // Maximum requests allowed
-    private const TIME_FRAME = 60; // Time frame in seconds
-    private const STORAGE_DIR = '/tmp/rate_limiter/'; // Directory to store rate limit data
+    private const LIMIT = 30; 
+    private const TIME_FRAME = 60; 
+    private const STORAGE_DIR = '/tmp/rate_limiter/'; 
 
-    /**
-     * Checks if the request from a given client IP is allowed
-     * 
-     * @param string $clientIp Client IP address
-     * @return bool True if request is allowed, false otherwise
-     */
+    
     public static function isAllowed(string $clientIp): bool
     {
-        // Create storage directory if it doesn't exist
+        
         if (!file_exists(self::STORAGE_DIR)) {
             mkdir(self::STORAGE_DIR, 0755, true);
         }
@@ -25,10 +20,10 @@ class RateLimiter
         $storageFile = self::STORAGE_DIR . md5($clientIp) . '.json';
         $currentTime = time();
         
-        // Get current data for this IP
+        
         $data = self::getClientData($storageFile);
         
-        // If no data exists or time frame has expired, initialize with first request
+        
         if (!$data || ($currentTime - $data['firstRequestTime'] > self::TIME_FRAME)) {
             $data = [
                 'count' => 1,
@@ -39,20 +34,18 @@ class RateLimiter
             return true;
         }
         
-        // Increment request count
+        
         $data['count']++;
         self::saveClientData($storageFile, $data);
         
-        // Log the request
+        
         self::logRequest($clientIp, $data['count']);
         
-        // Check if the limit has been reached
+        
         return $data['count'] <= self::LIMIT;
     }
     
-    /**
-     * Get current client data from storage
-     */
+    
     private static function getClientData(string $storageFile): ?array
     {
         if (!file_exists($storageFile)) {
@@ -67,17 +60,13 @@ class RateLimiter
         return json_decode($content, true);
     }
     
-    /**
-     * Save client data to storage
-     */
+    
     private static function saveClientData(string $storageFile, array $data): void
     {
         file_put_contents($storageFile, json_encode($data));
     }
     
-    /**
-     * Get normalized client IP (handle proxies)
-     */
+    
     private static function getNormalizedClientIp(string $defaultIp): string
     {
         if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
@@ -92,17 +81,13 @@ class RateLimiter
         return $defaultIp;
     }
     
-    /**
-     * Log rate limit information
-     */
+    
     private static function logRequest(string $clientIp, int $count): void
     {
         error_log("Rate limit: IP {$clientIp}, request {$count}/" . self::LIMIT);
     }
     
-    /**
-     * Get remaining requests for a client
-     */
+    
     public static function getRemainingRequests(string $clientIp): int
     {
         $clientIp = self::getNormalizedClientIp($clientIp);
@@ -113,7 +98,7 @@ class RateLimiter
             return self::LIMIT;
         }
         
-        // Check if time frame has expired
+        
         if (time() - $data['firstRequestTime'] > self::TIME_FRAME) {
             return self::LIMIT;
         }
@@ -121,9 +106,7 @@ class RateLimiter
         return max(0, self::LIMIT - $data['count']);
     }
     
-    /**
-     * Add rate limit headers to response
-     */
+    
     public static function addRateLimitHeaders(string $clientIp): void
     {
         $remaining = self::getRemainingRequests($clientIp);

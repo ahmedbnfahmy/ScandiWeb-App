@@ -8,12 +8,7 @@ use App\Models\Attribute\SwatchAttribute;
 
 class AttributeFactory
 {
-    /**
-     * Create appropriate attribute instance based on type
-     *
-     * @param array $data Attribute data
-     * @return AbstractAttribute
-     */
+    
     public static function create(array $data): AbstractAttribute
     {
         $type = $data['type'] ?? '';
@@ -21,7 +16,7 @@ class AttributeFactory
         $attribute = match ($type) {
             'text' => new TextAttribute(),
             'swatch' => new SwatchAttribute(),
-            default => new TextAttribute() // Default case
+            default => new TextAttribute() 
         };
         
         $attribute->setData($data);

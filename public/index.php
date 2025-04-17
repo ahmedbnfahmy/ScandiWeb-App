@@ -29,7 +29,7 @@ try {
 
     if (!RateLimiter::isAllowed($clientIp)) {
         header('Content-Type: application/json');
-        http_response_code(429); // Too Many Requests
+        http_response_code(429); 
         RateLimiter::addRateLimitHeaders($clientIp);
         echo json_encode([
             'errors' => [['message' => 'Too Many Requests. Please try again later.']]
@@ -37,7 +37,7 @@ try {
         exit;
     }
     
-    // Add rate limit headers to successful responses
+    
     RateLimiter::addRateLimitHeaders($clientIp);
     
     $dispatcher = FastRoute\simpleDispatcher(function(FastRoute\RouteCollector $r) {

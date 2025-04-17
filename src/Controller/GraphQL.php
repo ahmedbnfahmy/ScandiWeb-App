@@ -45,7 +45,7 @@ class GraphQL {
                 ]
             ]);
             
-            // Initialize order-related types
+            
             OrderType::get();
             OrderInputType::get();
             OrderItemInputType::get();
@@ -53,7 +53,7 @@ class GraphQL {
             OrderItemType::get();
             SelectedAttributeType::get();
             
-            // Initialize attribute-related types
+            
             AttributeType::get();
             AttributeItemType::get();
         
@@ -71,11 +71,11 @@ class GraphQL {
             $query = $input['query'];
             $variableValues = $input['variables'] ?? null;
         
-            // Add debug flags to get more detailed error information
+            
             $result = GraphQLBase::executeQuery($schema, $query, null, null, $variableValues);
             $output = $result->toArray(DebugFlag::INCLUDE_DEBUG_MESSAGE | DebugFlag::INCLUDE_TRACE);
         } catch (Throwable $e) {
-            // Provide more detailed error information
+            
             $output = [
                 'errors' => [
                     [

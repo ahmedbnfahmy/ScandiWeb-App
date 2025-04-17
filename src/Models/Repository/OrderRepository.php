@@ -13,19 +13,13 @@ class OrderRepository extends CoreModel
         return 'orders';
     }
     
-    /**
-     * Create a new order in the database
-     * 
-     * @param array $data The order data
-     * @return string The ID of the created order
-     * @throws InvalidArgumentException If validation fails
-     */
+    
     public function create(array $data): string
     {
-        // Generate a UUID for the order ID if not provided
+        
         $orderId = $data['id'] ?? UuidGenerator::generate();
         
-        // Prepare order data for database
+        
         $orderData = [
             'id' => $orderId,
             'customer_name' => $data['customerName'],
@@ -36,7 +30,7 @@ class OrderRepository extends CoreModel
             'created_at' => date('Y-m-d H:i:s')
         ];
         
-        // Insert the order directly
+        
         $this->query(
             "INSERT INTO orders (id, customer_name, customer_email, address, total_amount, status, created_at) 
              VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -51,7 +45,7 @@ class OrderRepository extends CoreModel
             ]
         );
         
-        // Insert order items if they exist
+        
         if (isset($data['items']) && !empty($data['items'])) {
             $orderItemRepo = new OrderItemRepository();
             $orderItemRepo->createOrderItems($orderId, $data['items']);
@@ -60,22 +54,17 @@ class OrderRepository extends CoreModel
         return $orderId;
     }
     
-    /**
-     * Create order and return order data
-     * 
-     * @param array $data The order data
-     * @return array The created order data
-     */
+    
     public function createAndReturn(array $data): array
     {
-        // Call the regular create method to insert the order
+        
         $orderId = $this->create($data);
         
-        // Format order items for response
+        
         $orderItems = [];
         if (isset($data['items']) && !empty($data['items'])) {
             foreach ($data['items'] as $item) {
-                // Generate an ID for each item in the response
+                
                 $itemId = UuidGenerator::generate();
                 
                 $orderItems[] = [
@@ -93,7 +82,7 @@ class OrderRepository extends CoreModel
             }
         }
         
-        // Return the created order data directly
+        
         return [
             'id' => $orderId,
             'customerName' => $data['customerName'],
@@ -106,22 +95,16 @@ class OrderRepository extends CoreModel
         ];
     }
     
-    /**
-     * Create a new order with items and attributes in the database
-     * 
-     * @param array $data The order data
-     * @return array The created order with all details
-     * @throws InvalidArgumentException If validation fails
-     */
+    
     public function createOrder(array $data): array
     {
-        // Start a transaction
+        
         $this->query("START TRANSACTION");
         
         try {
             $orderId = $data['id'] ?? UuidGenerator::generate();
             
-            // Insert the order
+            
             $this->query(
                 "INSERT INTO orders (id, customer_name, customer_email, address, total_amount, status, created_at) 
                  VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -223,18 +206,10 @@ class OrderRepository extends CoreModel
         }
     }
     
-    /**
-     * Get attribute information from the attribute repository
-     * Helper method that can be moved to ProductAttributeRepository later
-     * 
-     * @param string $productId The product ID
-     * @param string $attributeName The attribute name
-     * @param string $attributeItemId The attribute item ID
-     * @return array Attribute information
-     */
+    
     private function getAttributeInfo(string $productId, string $attributeName, string $attributeItemId): array
     {
-        // Find the attribute ID by name
+        
         $attributeQuery = $this->query(
             "SELECT id FROM attributes WHERE product_id = ? AND LOWER(name) = LOWER(?)",
             [$productId, $attributeName]
@@ -246,7 +221,7 @@ class OrderRepository extends CoreModel
         
         $attributeId = $attributeQuery[0]['id'];
         
-        // Find the attribute item ID 
+        
         $itemQuery = $this->query(
             "SELECT id, display_value FROM attribute_items 
              WHERE attribute_id = ? AND (item_id = ? OR LOWER(display_value) = LOWER(?))",

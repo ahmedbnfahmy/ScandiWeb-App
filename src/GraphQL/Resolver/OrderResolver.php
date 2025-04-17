@@ -23,19 +23,14 @@ class OrderResolver
         $this->productAttributeRepository = new ProductAttributeRepository();
     }
     
-    /**
-     * Create a new order
-     * 
-     * @param array $input The order input data
-     * @return array The created order data
-     */
+    
     public function createOrder(array $input): array
     {
         try {
-            // Validate input data
+            
             $this->validateInput($input);
             
-            // Create the order and return data directly
+            
             return $this->orderRepository->createAndReturn($input);
         } catch (InvalidArgumentException $e) {
             throw $e;
@@ -45,35 +40,24 @@ class OrderResolver
         }
     }
     
-    /**
-     * Validate input data
-     * 
-     * @param array $input The input data
-     * @throws InvalidArgumentException If validation fails
-     */
+    
     private function validateInput(array $input): void
     {
-        // Validate items
+        
         if (!isset($input['items']) || empty($input['items'])) {
             throw new InvalidArgumentException('Order must contain at least one item');
         }
         
-        // Validate each item
+        
         foreach ($input['items'] as $index => $item) {
             $this->validateItem($item, $index);
         }
     }
     
-    /**
-     * Validate order item
-     * 
-     * @param array $item The order item
-     * @param int $index The item index
-     * @throws InvalidArgumentException If validation fails
-     */
+    
     private function validateItem(array $item, int $index): void
     {
-        // Check required fields
+        
         if (!isset($item['productId']) || empty($item['productId'])) {
             throw new InvalidArgumentException("Item at index $index is missing productId");
         }
@@ -82,12 +66,12 @@ class OrderResolver
             throw new InvalidArgumentException("Item at index $index has invalid quantity");
         }
         
-                // Verify product exists
+                
         if (!$this->productRepository->productExists($item['productId'])) {
             throw new InvalidArgumentException("Product with ID {$item['productId']} does not exist");
         }
         
-        // Validate selected attributes if present
+        
         if (isset($item['selectedAttributes']) && !empty($item['selectedAttributes'])) {
             foreach ($item['selectedAttributes'] as $attrIndex => $attribute) {
                 if (!isset($attribute['attributeName']) || empty($attribute['attributeName'])) {
@@ -98,7 +82,7 @@ class OrderResolver
                     throw new InvalidArgumentException("Attribute at index $attrIndex for item $index is missing attributeItemId");
                 }
                 
-                // Validate that the attribute is valid for this product
+                
                 if (!$this->productAttributeRepository->attributeExistsForProduct(
                     $item['productId'],
                     $attribute['attributeName'],
@@ -113,12 +97,7 @@ class OrderResolver
         }
     }
     
-    /**
-     * Get order items for displaying existing orders
-     * 
-     * @param string $orderId The order ID
-     * @return array The order items
-     */
+    
     public function getOrderItems(string $orderId): array
     {
         return $this->orderItemRepository->getOrderItems($orderId);

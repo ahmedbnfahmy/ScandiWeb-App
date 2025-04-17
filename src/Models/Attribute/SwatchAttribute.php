@@ -25,7 +25,7 @@ class SwatchAttribute extends AbstractAttribute
     {
         $items = $this->getItems();
         foreach ($items as $item) {
-            // Color should be a valid hex code
+            
             if (!preg_match('/^#[a-f0-9]{6}$/i', $item['value'])) {
                 return false;
             }
